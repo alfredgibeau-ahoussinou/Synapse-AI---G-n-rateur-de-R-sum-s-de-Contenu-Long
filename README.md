@@ -5,28 +5,19 @@ De la voix à la clarté. Instantanément.
 ## Aperçu
 
 MVP serverless et Free Tier:
-- Frontend `web/` (Next.js + Tailwind) avec UI d'upload vers S3 via URL présignée.
-- Route API `web/src/app/api/presign/route.ts` pour générer l'URL S3 (AWS SDK v3).
+- Frontend `web/` (Next.js + Tailwind) avec UI d'upload vers Supabase Storage (upload signé).
+- Route API `web/src/app/api/presign/route.ts` pour générer une URL signée Supabase.
 - Cloud Functions Python (squelettes) dans `cloud/` pour ASR (Whisper / STT) et LLM (Gemini).
 - Schéma Supabase minimal `supabase/schema.sql` pour stocker statuts, transcription et résultat JSON.
 
 ## Prérequis
 
 - Node 18+
-- Compte AWS (S3) Free Tier. Créez un bucket.
 - Supabase (plan gratuit)
 
 ## Configuration
 
 Dans `web`, configurez les variables d'environnement (ex: `.env.local`).
-
-AWS S3 (optionnel si vous utilisez Supabase):
-```
-AWS_REGION=eu-west-3
-AWS_S3_BUCKET=mon-bucket
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-```
 
 Supabase Storage (fallback gratuit au lieu d'AWS):
 ```
@@ -46,7 +37,7 @@ cd web
 npm run dev
 ```
 
-UI d'upload: sélectionner un fichier audio/vidéo, obtenir une URL de pré-signature puis envoi direct vers S3 (PUT) ou Supabase Storage (upload signé) selon la configuration.
+UI d'upload: sélectionner un fichier audio/vidéo, obtenir une URL signée puis envoi direct vers Supabase Storage.
 
 ## Déploiement Free Tier
 

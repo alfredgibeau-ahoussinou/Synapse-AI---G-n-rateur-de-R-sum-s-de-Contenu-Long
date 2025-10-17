@@ -50,7 +50,7 @@ export default function Home() {
         setStatus(`Réponse invalide AWS: ${data.error || "URL manquante"}`);
         return;
       }
-      setStatus("Upload en cours vers S3…");
+      setStatus("Upload en cours…");
       const putRes = await fetch(data.url, {
         method: "PUT",
         headers: { "Content-Type": contentType },
@@ -73,7 +73,7 @@ export default function Home() {
         setStatus("Config Supabase incomplète (NEXT_PUBLIC_*) ou réponse invalide");
         return;
       }
-      setStatus("Upload en cours vers Supabase Storage…");
+      setStatus("Upload en cours…");
       // Utiliser l'endpoint de signed upload (PUT multipart/form-data)
       const form = new FormData();
       form.append("file", file);
@@ -88,7 +88,7 @@ export default function Home() {
         return;
       }
       setUploadedKey(data.key);
-      setStatus("Upload réussi (Supabase) ✔");
+      setStatus("Upload réussi ✔");
       return;
     }
 

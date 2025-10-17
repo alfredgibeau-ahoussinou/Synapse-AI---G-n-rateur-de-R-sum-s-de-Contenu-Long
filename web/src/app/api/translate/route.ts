@@ -1,27 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-
-function createS3Client(): S3Client {
-  const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
-  if (!region) throw new Error("AWS_REGION manquant");
-
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-  if (accessKeyId && secretAccessKey) {
-    return new S3Client({ region, credentials: { accessKeyId, secretAccessKey } });
-  }
-  return new S3Client({ region });
-}
 
 export async function POST(req: NextRequest) {
   try {
     const { key, bucket: bodyBucket } = await req.json();
-    const bucket = bodyBucket || process.env.AWS_S3_BUCKET;
+    const bucket = bodyBucket || process.env.SUPABASE_BUCKET;
     if (!bucket || !key) {
       return NextResponse.json({ error: "Champs requis: key (+ bucket si non défini en env)" }, { status: 400 });
     }
@@ -30,13 +17,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "OPENAI_API_KEY manquant" }, { status: 500 });
     }
 
-    const s3 = createS3Client();
-    const get = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-    const bodyStream = get.Body as NodeJS.ReadableStream;
-
-    // Préparer un fichier lisible par le SDK OpenAI
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json({ error: "Configurer SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY" }, { status: 500 });
+    }
+    const admin = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
+    const { data: downloadData, error } = await admin.storage.from(bucket).download(key);
+    if (error || !downloadData) {
+      return NextResponse.json({ error: error?.message || "Téléchargement Supabase échoué" }, { status: 500 });
+    }
+    const arrayBuffer = await downloadData.arrayBuffer();
     const filename = key.split("/").pop() || "media";
-    const file = await toFile(bodyStream as any, filename, { type: get.ContentType || "application/octet-stream" });
+    const file = await toFile(new Blob([arrayBuffer]) as any, filename, { type: downloadData.type || "application/octet-stream" });
 
     const openai = new OpenAI({ apiKey: openaiKey });
 
